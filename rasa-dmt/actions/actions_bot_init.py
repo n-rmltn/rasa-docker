@@ -79,4 +79,4 @@ def decrypt_claim(encrypted_claim):
     
     # Decode decrypted bytes to UTF-8 and strip padding
     decrypted_text = decrypted_bytes.decode('utf-8')
-    return decrypted_text.rstrip('\x06')
+    return decrypted_text.rstrip('\x06\t')
