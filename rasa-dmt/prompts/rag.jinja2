@@ -1,0 +1,35 @@
+Given the following information, please provide an answer based on the provided documents and the context of the recent conversation.
+
+{% if slots|length > 0 %}
+### Slots or Variables
+Here are the variables of the currently active conversation which may be used to answer the question:
+{% for slot in slots -%}
+- name: {{ slot.name }}, value: {{ slot.value }}, type: {{ slot.type }}
+{% if slot.name == "language" -%}
+{% set language = slot.value %}- Your response should be in {{ language }} language
+{% endif %}
+{% if slot.name == "user_role" -%}
+{% set user_role = slot.value %}
+### Relevant Documents
+Use the following documents to answer the question:
+{% for doc in docs %}
+{% if user_role in doc.metadata.permission %}
+{"document" : "{{ loop.index }}",
+"text" : "{{ doc.text }}"}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Current Conversation
+Transcript of the current conversation, use it to determine the context of the question:
+{{ current_conversation }}
+
+### Response Guidelines
+- Based on the above, please formulate a response to the question or request in the user's last message. 
+- It is important that you ensure the response is strictly based on the provided documents and conversation context.
+- If the answer cannot be determined from the provided documents or context, clearly state that the information is not available.
+- Do not refer to "provided documents" in your response, as the user will not know what you are referring to.
+- Avoid speculating or making assumptions beyond the given information and documents.
+- Keep responses concise (2 to 3 sentences) and within 200 - 300 words.

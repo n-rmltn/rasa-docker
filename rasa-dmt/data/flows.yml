@@ -1,0 +1,80 @@
+flows:
+    user_ask_help:
+        description: handle a user request for help
+        name: User help
+        steps:
+            - action: utter_bot_capabilities
+            - collect: help_option
+              description: the user's choice of help option
+              next:
+                  - if: slots.help_option == "weather"
+                    then:
+                        - link: user_request_weather
+                  - if: slots.help_option == "language_toggle"
+                    then:
+                        - link: user_language
+                  - else:
+                        - action: action_trigger_search
+                          next: END
+
+    user_language:
+        description: handle a user request regarding language if user mentions anything regarding language
+        name: System language
+        steps:
+            - action: utter_language
+            - action: action_listen
+            - action: utter_language_confirm
+
+    image_request:
+        # if: slots.user_role == "admin" AND slots.user_auth
+        if: slots.user_auth
+        description: handles a request or provision of an image
+        name: Image request
+        steps:
+            - action: action_milvus_search
+
+    bot_init:
+        description: initialising conversation
+        if: False
+        name: Init
+        nlu_trigger:
+            - name: session_start
+        steps:
+            - action: action_init_bot
+            - action: utter_hello
+            - link: user_language
+
+    user_ask_username:
+        description: handle a user request for their name
+        name: User name
+        steps:
+            - action: action_whats_my_name
+
+    user_request_weather:
+        if: slots.user_auth
+        description: handle a user request to fetch for weather data
+        name: Fetch weather
+        steps:
+            - collect: location
+              description: location mentioned by user
+            - action: action_fetch_weather
+
+    pattern_search:
+        if: slots.user_auth AND context.previous_flow_name != "user_ask_help"
+        description: handle a knowledge-based question or request by the user especially if the word what, who, how, when, and where is included.
+        name: pattern search
+        steps:
+            - action: action_trigger_search
+
+    pattern_chitchat:
+        if: slots.user_auth
+        description: Conversation repair flow for off-topic interactions that won't disrupt the main conversation. should not respond to greetings or anything else for which there is a flow defined
+        name: pattern chitchat
+        steps:
+            - action: utter_free_chitchat_response
+
+    pattern_session_start:
+        description: Flow for starting the conversation
+        name: pattern session start
+        steps:
+            - action: action_session_start

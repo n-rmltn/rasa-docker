@@ -1,0 +1,37 @@
+recipe: default.v1
+language: en
+pipeline:
+    - name: SingleStepLLMCommandGenerator
+      prompt: prompts/command_gen.jinja2
+      llm:
+          model: "gpt-4o-mini"
+          temperature: 0.7
+      flow_retrieval:
+          active: true
+          embeddings:
+              provider: openai
+              model: text-embedding-3-small
+      user_input:
+          max_characters: 2048
+    - name: NLUCommandAdapter
+      user_input:
+          max_characters: 2048
+
+policies:
+    - name: FlowPolicy
+    - name: EnterpriseSearchPolicy
+      prompt: prompts/rag.jinja2
+      llm:
+          model: "gpt-4o-mini"
+          temperature: 0.7
+      vector_store:
+          type: "milvus"
+          source: "rasa"
+          threshold: 0.0
+      embeddings:
+          provider: openai
+          model: text-embedding-3-small
+      max_messages_in_query: 1
+      max_history: 2
+#  - name: RulePolicy
+assistant_id: 20240815-142427-snowy-layout

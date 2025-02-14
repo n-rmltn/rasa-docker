@@ -1,0 +1,159 @@
+version: "3.1"
+
+entities:
+    - user_token
+    - location
+
+slots:
+    location:
+        type: text
+
+    help_option:
+        type: text
+        mappings:
+            - type: from_llm
+
+    language:
+        type: categorical
+        values:
+            - en-GB
+            - id-ID
+        initial_value: "en-GB"
+        mappings:
+            - type: from_llm
+
+    user_token:
+        type: text
+        mappings:
+            - type: custom
+
+    user_account:
+        type: text
+        mappings:
+            - type: custom
+
+    user_role:
+        type: text
+        mappings:
+            - type: custom
+
+    user_auth:
+        type: bool
+        mappings:
+            - type: custom
+              action: action_init_bot
+
+responses:
+    utter_ask_help_option:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Apa yang bisa saya bantu hari ini?"
+          buttons:
+              - title: "Prakiraan cuaca"
+                payload: "/SetSlots(help_option=weather)"
+              - title: "Bahasa"
+                payload: "/SetSlots(help_option=language_toggle)"
+          metadata:
+              rephrase: False
+
+        - text: What would you like help with today?
+          buttons:
+              - title: "Weather forecast"
+                payload: "/SetSlots(help_option=weather)"
+              - title: "Language"
+                payload: "/SetSlots(help_option=language_toggle)"
+          metadata:
+              rephrase: False
+
+    utter_language:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Saat ini saya berbicara dalam bahasa Indonesia. Bahasa apa yang paling nyaman Anda gunakan untuk berbicara?"
+          buttons:
+              - title: "Bahasa Inggris"
+                payload: "/SetSlots(language=en-GB)"
+              - title: "Bahasa Indonesia"
+                payload: "/SetSlots(language=id-ID)"
+          metadata:
+              rephrase: False
+
+        - text: "I am currently speaking in English. What language are you most comfortable speaking in?"
+          buttons:
+              - title: "English"
+                payload: "/SetSlots(language=en-GB)"
+              - title: "Indonesian"
+                payload: "/SetSlots(language=id-ID)"
+          metadata:
+              rephrase: False
+
+    utter_language_confirm:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Bagus! Saya akan berbicara dalam bahasa Indonesia."
+          metadata:
+              rephrase: False
+
+        - text: "Great! I'll be conversing in English."
+          metadata:
+              rephrase: False
+
+        - text: ""
+          metadata:
+              rephrase: False
+
+    utter_ask_location:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Di lokasi mana Anda ingin prakiraan cuaca?"
+          metadata:
+              rephrase: False
+
+        - text: "Which location do you want a forecast on?"
+          metadata:
+              rephrase: False
+
+    utter_hello:
+        - text: "Hello {user_account}!"
+          metadata:
+              rephrase: False
+
+    utter_bot_capabilities:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Saya bisa membantu Anda dengan berbagai hal. Fungsionalitas RAG adalah keahlian saya. Sertakan kata kunci 'gambar' dalam pertanyaan Anda untuk mencari informasi dan gambar yang menyertainya. Tanyakan 'bantuan' untuk informasi lebih lanjut."
+          metadata:
+              rephrase: False
+
+        - text: "I'm here to assist you with a range of topics. My expertise lies in RAG functionality. Just include the keyword 'image' in your request if you want to find information along with an accompanying image. Feel free to ask for 'help' if you need further details."
+          metadata:
+              rephrase: False
+
+    utter_can_do_something_else:
+        - condition:
+              - type: slot
+                name: language
+                value: "id-ID"
+          text: "Apa lagi yang bisa saya bantu?"
+          metadata:
+              rephrase: False
+
+        - text: "What else can I help you with?"
+          metadata:
+              rephrase: False
+
+actions:
+    - action_milvus_search
+    - action_whats_my_name
+    - action_name_set
+    - action_init_bot
+    - action_fetch_weather
