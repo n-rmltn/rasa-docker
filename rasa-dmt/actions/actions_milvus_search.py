@@ -1,6 +1,73 @@
+import sys
 import os
-import requests
 import json
+import requests
+from typing import Any, Dict
+from rasa_sdk import Action, Tracker
+from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.events import SlotSet
+from pymilvus import connections,Collection
+from dotenv import load_dotenv
+
+load_dotenv()
+
+milvus_host = 'milvus-standalone-rasa'
+milvus_port = '19530'
+collection_name = 'rasa'
+user_name='rasabot'
+user_password='rasabot'
+
+def get_openai_embeddings(api_key: str, input_text: str) -> list[float]:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "text-embedding-3-small",
+                "input": input_text
+            }
+            response = requests.post("https://api.openai.com/v1/embeddings", headers=headers, json=data)
+            response.raise_for_status()
+            embeddings = response.json()["data"][0]["embedding"]
+            return embeddings
+
+class MilvusSearchAction(Action):
+    def name(self) -> str:
+        return "action_milvus_search"
+    
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]):
+        try:
+            api_key = os.getenv("OPENAI_API_KEY")
+
+            user_input = tracker.latest_message.get('text')
+            user_role = tracker.get_slot("user_role")
+
+            query_vec = get_openai_embeddings(api_key, user_input)
+            
+            connections.connect("default", host=milvus_host, port=milvus_port, user=user_name, password=user_password)
+            collection = Collection(name=collection_name)
+
+            search_results = collection.search(
+                data=[query_vec],
+                anns_field="vector",
+                output_fields=["text"],
+                expr=f"ARRAY_CONTAINS(permission, '{user_role}')",
+                limit=3,
+                param={"metric_type": "L2", "params": {}},  
+            )[0]
+
+            language = tracker.get_slot('language')
+
+            image_url, text = get_openai_response(search_results, user_input, language)
+
+            dispatcher.utter_message(text=text, image=image_url)
+            return []
+
+        except Exception as e:
+            # Handle the error
+            dispatcher.utter_message(text="An error occurred while processing your request. Please try again later.")
+            print(f"Error: {str(e)}")
+            return []
 
 def get_openai_response(search_results, user_input, language):
     api_key = os.getenv("OPENAI_API_KEY")
